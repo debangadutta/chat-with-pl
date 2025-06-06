@@ -24,17 +24,17 @@ Built with:
 
 ### 1️⃣ Clone this repo
 
-git clone https://github.com/debangadutta/chat-with-pl.git
+git clone https://github.com/debangadutta/chat-with-pl.git  
 cd chat-with-pl
 
 ### 2️⃣ Install dependencies
 pip install -r requirements.txt
 
 ### 3️⃣ Set up API key
-Create a .env file in the project folder:
-OPENAI_API_KEY=your-openai-api-key-here
-You need an OpenAI API key.
-⚠️ Do not share your .env or commit it to GitHub!
+Create a .env file in the project folder:  
+OPENAI_API_KEY=your-openai-api-key-here  
+You need an OpenAI API key.  
+⚠️ Do not share your .env or commit it to GitHub!  
 
 ### 4️⃣ Run the app
 streamlit run app.py
