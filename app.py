@@ -1,36 +1,36 @@
-# app.py
-
 import streamlit as st
 import pandas as pd
 from openai import OpenAI
 import os
-from dotenv import load_dotenv
 from retrieval import (
     total_goals_scored, total_assists, possession,
     expected_goals, yellow_cards, red_cards
 )
 
-# Load environment variables
+# Load OpenAI API key from Streamlit secrets
 api_key = st.secrets["OPENAI_API_KEY"]
 client = OpenAI(api_key=api_key)
 
 # Load CSV
-df = pd.read_csv("gw38.csv")  # make sure your CSV is in same folder
+df = pd.read_csv("gw38.csv")
 
-# NEW: LLM-guided route_question
+# NEW: LLM-guided classify_question
 def classify_question(question):
     system_prompt = """
 You are an assistant that maps user questions about football team stats to one of the following known stats:
 - total goals
+- total goals per 90
 - assists
+- assists per 90
 - possession
 - expected goals
+- expected goals per 90
 - yellow cards
 - red cards
 
 If the question does not match any of these, respond with "unknown".
 
-Only return one of: [total goals, assists, possession, expected goals, yellow cards, red cards, unknown].
+Only return one of: [total goals, total goals per 90, assists, assists per 90, possession, expected goals, expected goals per 90, yellow cards, red cards, unknown].
 """
 
     user_prompt = f"User question: {question}"
@@ -47,22 +47,28 @@ Only return one of: [total goals, assists, possession, expected goals, yellow ca
     stat_intent = response.choices[0].message.content.strip().lower()
     return stat_intent
 
-# Main routing using classified intent
+# Main routing
 def route_question(question, df, team_name):
     stat_intent = classify_question(question)
 
     if stat_intent == "total goals":
-        return "Total goals", total_goals_scored(df, team_name)
+        return stat_intent, total_goals_scored(df, team_name)
+    elif stat_intent == "total goals per 90":
+        return stat_intent, total_goals_scored(df, team_name, per_90=True)
     elif stat_intent == "assists":
-        return "Total assists", total_assists(df, team_name)
+        return stat_intent, total_assists(df, team_name)
+    elif stat_intent == "assists per 90":
+        return stat_intent, total_assists(df, team_name, per_90=True)
     elif stat_intent == "possession":
-        return "Possession %", possession(df, team_name)
+        return stat_intent, possession(df, team_name)
     elif stat_intent == "expected goals":
-        return "Expected Goals", expected_goals(df, team_name)
+        return stat_intent, expected_goals(df, team_name)
+    elif stat_intent == "expected goals per 90":
+        return stat_intent, expected_goals(df, team_name, per_90=True)
     elif stat_intent == "yellow cards":
-        return "Yellow cards", yellow_cards(df, team_name)
+        return stat_intent, yellow_cards(df, team_name)
     elif stat_intent == "red cards":
-        return "Red cards", red_cards(df, team_name)
+        return stat_intent, red_cards(df, team_name)
     else:
         return None, "Sorry, I cannot answer that question based on available team stats."
 
@@ -96,7 +102,10 @@ team_list = df['Squad'].tolist()
 team_name = st.selectbox("Select Team", team_list)
 
 # User question input
-question = st.text_input("Ask a question about this team (e.g. 'How many goals did Chelsea score?')")
+question = st.text_input("Ask a question about this team (e.g. 'How many goals did Arsenal score per 90?')")
+
+# Optional toggle to show intent and retrieved value
+show_details = st.checkbox("Show intent and retrieved value")
 
 # Submit button
 if st.button("Submit"):
@@ -106,6 +115,10 @@ if st.button("Submit"):
         if field:
             answer = call_llm(question, field, value, team_name)
             st.success(answer)
+
+            # If user enabled details → show them
+            if show_details:
+                st.info(f"LLM classified this as: **{field}**\n\nRetrieved value: **{value}**")
         else:
             st.warning(value)
     else:
