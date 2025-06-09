@@ -273,7 +273,8 @@ def main():
                 if field:
                     answer = assistant.generate_answer(question, field, value, team_name)
                     st.success(answer)
-
+                    if show_details:
+                        st.info(f"**Classification:** {field}\n\n**Retrieved Value:** {value}")
                 else:
                     st.warning(value)
 
